@@ -350,8 +350,8 @@ a.list-item:hover { background: var(--surface-2); }
   .grid.main-side { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
-  .sidebar { position: fixed; right: 0; transform: translateX(100%); transition: transform .22s; box-shadow: var(--shadow-lg); }
-  .sidebar.open { transform: none; }
+  .sidebar { position: fixed; right: 0; transform: translateX(100%); transition: transform .22s; visibility: hidden; }
+  .sidebar.open { transform: none; box-shadow: var(--shadow-lg); visibility: visible; }
   .sidebar-overlay.open { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 25; }
   .topbar { padding: 0 16px; }
   .topbar .menu-btn { display: grid; }
