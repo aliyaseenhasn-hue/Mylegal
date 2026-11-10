@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { ROLES, CURRENCIES, opts } from '../lib/labels';
 import { initials, date } from '../lib/format';
 import { PageHead } from '../components/Layout';
+import PushCard from '../components/PushCard';
 import { Tabs, Field, Select, FormShell, useForm, Modal, Badge, useToast, Confirm } from '../components/ui';
 
 const ROLE_HELP = {
@@ -189,6 +190,7 @@ function AccountTab() {
   const [em, setEm] = useState({ email: '', password: '' });
   return (
     <div className="card-body">
+      <PushCard />
       <div className="grid cols-2">
         <div>
           <h4 style={{ marginBottom: 12 }}>بياناتي</h4>

@@ -10,6 +10,7 @@ import { PRIORITY } from '../lib/labels';
 import { useAsync, Async, Stat, Empty, Badge, useToast } from '../components/ui';
 import { ClientForm, CaseForm, HearingForm, TaskForm, PaymentForm } from '../components/forms';
 import { useNavigate } from 'react-router-dom';
+import PushCard from '../components/PushCard';
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat('en', { hour: 'numeric', hour12: false, timeZone: 'Asia/Baghdad' }).format(new Date()));
@@ -85,6 +86,8 @@ export default function Dashboard() {
           {can('editFinance') && <button className="btn btn-ghost" onClick={() => setModal('payment')}><Wallet size={17} />سند قبض</button>}
         </div>
       </div>
+
+      <PushCard compact />
 
       <Async state={state}>
         {({ summary: s, hearings, tasks, cases, activity, months }) => {

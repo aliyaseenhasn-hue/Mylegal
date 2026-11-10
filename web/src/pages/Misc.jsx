@@ -6,8 +6,11 @@ import { timeAgo, dateTime } from '../lib/format';
 import { PageHead } from '../components/Layout';
 import { useAsync, Async, Empty, Pager, Select, useToast } from '../components/ui';
 import { ACT, ENT } from './Dashboard';
+import PushCard from '../components/PushCard';
+import { clearBadge } from '../lib/push';
+import { useEffect } from 'react';
 
-const KIND_ICON = { task_due: ListChecks, task_overdue: AlertTriangle, hearing_soon: CalendarClock, poa_expiring: FileSignature, general: Bell, fees_due: Bell };
+const KIND_ICON = { task_assigned: ListChecks, task_due: ListChecks, task_overdue: AlertTriangle, hearing_soon: CalendarClock, poa_expiring: FileSignature, general: Bell, fees_due: Bell };
 const notifyChanged = () => window.dispatchEvent(new Event('notifications:changed'));
 
 export function NotificationsPage() {
@@ -18,6 +21,8 @@ export function NotificationsPage() {
     if (onlyUnread) q = q.eq('is_read', false);
     return must(await q);
   }, [onlyUnread]);
+
+  useEffect(() => { clearBadge(); }, []);
 
   const markAll = async () => {
     must(await supabase.from('notifications').update({ is_read: true }).eq('is_read', false));
@@ -36,6 +41,7 @@ export function NotificationsPage() {
         <label className="check"><input type="checkbox" checked={onlyUnread} onChange={(e) => setOnlyUnread(e.target.checked)} />غير المقروءة فقط</label>
         <button className="btn btn-ghost" onClick={markAll}><CheckCheck size={17} />تعليم الكل كمقروء</button>
       </PageHead>
+      <PushCard />
       <div className="card">
         <Async state={state} empty={<Empty icon={Bell} title="لا توجد تنبيهات" text="ستظهر هنا تذكيرات الجلسات والمهام المستحقة" />}>
           {(rows) => rows.map((n) => {

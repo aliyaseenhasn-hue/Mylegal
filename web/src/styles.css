@@ -422,3 +422,11 @@ a.list-item:hover { background: var(--surface-2); }
   .page-head h1 { font-size: 20px; }
   .hero h2 { font-size: 23px; }
 }
+
+/* ---------- بطاقة الإشعارات ---------- */
+.push-card { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; margin-bottom: 18px; border-color: #ecdcb5; background: linear-gradient(135deg, var(--surface), var(--accent-soft)); flex-wrap: wrap; }
+.push-card .grow > b { display: block; margin-bottom: 2px; }
+.push-ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--navy-900); color: var(--gold-400); flex-shrink: 0; }
+.push-card .grow { flex: 1; min-width: 200px; }
+.push-steps { margin: 6px 0; padding-inline-start: 18px; line-height: 1.9; }
+.push-steps svg { vertical-align: -2px; }
