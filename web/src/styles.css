@@ -440,3 +440,118 @@ a.list-item:hover { background: var(--surface-2); }
 .remind-preview.past { color: var(--danger); }
 .task-remind { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--accent); }
 .task-remind.sent { color: var(--text-3); }
+
+/* =========================================================
+   تكييف كامل لشاشات الآيفون (الحواف الآمنة، الجداول، النوافذ)
+   ========================================================= */
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; overscroll-behavior-y: none; }
+button, a, select, input, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* الحواف الآمنة عند التشغيل كتطبيق مثبّت (النوتش وشريط الرجوع) */
+.topbar { padding-top: env(safe-area-inset-top); height: calc(64px + env(safe-area-inset-top)); }
+.sidebar { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+.content { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+.toasts { bottom: calc(20px + env(safe-area-inset-bottom)); }
+.modal-backdrop { padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.modal { max-height: calc(100dvh - max(16px, env(safe-area-inset-top)) - max(16px, env(safe-area-inset-bottom))); }
+.auth-panel { padding-top: max(32px, env(safe-area-inset-top)); padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+
+@media (max-width: 900px) {
+  /* منع التكبير التلقائي في iOS عند الضغط على الحقول (يتطلب 16px) */
+  input, select, textarea, .search-box input, .toolbar select, .toolbar input[type=date] { font-size: 16px !important; }
+  .topbar { padding-left: 12px; padding-right: 12px; gap: 8px; }
+  .topbar-actions { gap: 0; }
+  .icon-btn { width: 38px; height: 38px; }
+}
+
+@media (max-width: 640px) {
+  .content { padding-left: 12px; padding-right: 12px; }
+  .page-head { margin-bottom: 16px; }
+  .page-head > div:first-child { width: 100%; }
+  .page-head .actions { width: 100%; }
+  .page-head .actions > .btn:not(.btn-icon), .page-head .actions > a.btn:not(.btn-icon) { flex: 1 1 auto; }
+  .page-head .actions > .actions { width: 100%; }
+  .card-head { padding: 14px 16px; flex-wrap: wrap; }
+  .card-body { padding: 16px; }
+  .list-item { padding: 12px 14px; }
+
+  /* الأشرطة والفلاتر */
+  .toolbar { padding: 12px; gap: 8px; }
+  .toolbar .search-box { max-width: none; flex: 1 1 100%; }
+  .toolbar > select, .toolbar > input[type=date], .toolbar > div > select { flex: 1 1 40%; min-width: 0; }
+  .toolbar > div[style] { margin-inline-start: 0 !important; flex: 1 1 100%; }
+  .toolbar > div[style] select { width: 100%; }
+
+  /* التبويبات تصبح أزراراً تلتف بدل أن تختفي جانباً */
+  .tabs { flex-wrap: wrap; gap: 6px; padding: 10px 12px; overflow: visible; }
+  .tabs button { border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; margin: 0; font-size: 13.5px; }
+  .tabs button.active { background: var(--primary); color: var(--primary-contrast); border-color: var(--primary); }
+  .tabs button.active .n { background: rgba(255,255,255,.2); color: inherit; }
+
+  /* الجداول تتحول إلى بطاقات */
+  .table-wrap { overflow: visible; }
+  .table, .table tbody, .table tfoot { display: block; width: 100%; }
+  .table thead { display: none; }
+  .table tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .table tbody tr:last-child { border-bottom: 0; }
+  .table td { display: block; padding: 0; border: 0 !important; min-width: 0; }
+  .table td:empty { display: none; }
+  .table td:has(.t-main) { flex: 1 1 100%; order: -1; }
+  .table td:has(> .btn), .table td:has(> a.btn) { margin-inline-start: auto; }
+  .table td[style*="min-width"] { min-width: 0 !important; flex: 1 1 100%; }
+  .table tfoot tr { justify-content: space-between; background: var(--surface-2); border-top: 1px solid var(--border); }
+  .table tfoot td { background: transparent; }
+
+  /* بطاقات الإحصاء في صف واحد تبقى أفقية ومضغوطة */
+  .grid.cols-3 .stat { flex-direction: row; align-items: center; padding: 14px 16px; }
+  .grid.cols-3 .stat .val { font-size: 20px; }
+  .grid { gap: 12px; }
+
+  /* النوافذ تفتح من الأسفل وزر الحفظ ظاهر دائماً */
+  .modal-backdrop { align-items: end; padding: max(10px, env(safe-area-inset-top)) 0 0; }
+  .modal { max-width: none !important; border-radius: 18px 18px 0 0; max-height: calc(100dvh - max(10px, env(safe-area-inset-top))); animation: sheet .22s ease-out; }
+  .modal.sm { border-radius: 18px 18px 0 0; }
+  .modal-head { padding: 12px 16px; position: relative; }
+  .modal-head::before { content: ""; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; border-radius: 4px; background: var(--border-strong); }
+  .modal-body { padding: 16px 16px 0; }
+  .modal-body form > .form-actions, .modal-body > .form-actions {
+    position: sticky; bottom: 0; margin: 16px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--surface); border-top: 1px solid var(--border); z-index: 2;
+  }
+  .form-actions .btn { flex: 1; height: 46px; }
+  .form-error { position: relative; }
+
+  /* أهداف لمس مريحة للأزرار ذات الأيقونة */
+  .btn-icon { width: 40px; flex: 0 0 auto; }
+  .btn-sm.btn-icon { width: 36px; height: 36px; }
+  .btn-icon svg { width: 17px; height: 17px; flex-shrink: 0; }
+  /* حقول التاريخ: كل حقل في سطره مع عنوانه */
+  .toolbar > input[type=date] { flex: 1 1 calc(100% - 44px); }
+  .toolbar > label.small { flex: 0 0 32px; }
+
+  /* الإشعارات المنبثقة بعرض الشاشة */
+  .toasts { left: 12px; right: 12px; }
+  .toast { min-width: 0; max-width: none; }
+
+  /* لوحة التحكم */
+  .hero { padding: 20px 18px; }
+  .hero .actions .btn { flex: 1 1 auto; }
+  .chart { height: 170px; }
+  .kv { grid-template-columns: 1fr; gap: 2px; }
+  .kv dt { margin-top: 8px; font-size: 12.5px; }
+  .push-card .actions { width: 100%; }
+  .push-card .actions .btn { flex: 1; }
+  .pager { flex-wrap: wrap; gap: 8px; }
+  .timeline { padding-inline-start: 18px; }
+  .tl-item > div:first-child { row-gap: 6px; }
+}
+@keyframes sheet { from { transform: translateY(40px); opacity: .4; } }
+
+@media (max-width: 380px) {
+  .grid.cols-4 .stat { padding: 12px; }
+  .grid.cols-4 .stat .val { font-size: 18px; }
+  .stat .ico { width: 36px; height: 36px; }
+  .btn:not(.btn-icon) { padding: 0 12px; }
+  .brand-sub { max-width: 140px; }
+}
