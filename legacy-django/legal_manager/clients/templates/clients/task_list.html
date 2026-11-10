@@ -1,0 +1,126 @@
+{% extends 'clients/base.html' %}
+{% block title %}المهام{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">المهام</li>{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h5 class="mb-0 fw-bold"><i class="fas fa-tasks me-2 text-primary"></i>إدارة المهام</h5>
+    <a href="{% url 'task-create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>مهمة جديدة
+    </a>
+</div>
+
+<!-- Overdue Tasks -->
+{% if overdue %}
+<div class="content-card card mb-4">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle me-2"></i>مهام متأخرة ({{ overdue.count }})
+    </div>
+    <div class="card-body">
+        {% for task in overdue %}
+        <div class="task-item overdue urgent">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <span class="fw-semibold">{{ task.title }}</span>
+                        <span class="badge badge-priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                        <span class="badge bg-light text-dark">{{ task.get_task_type_display }}</span>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        <i class="fas fa-user me-1"></i>{{ task.case.client.name }} &nbsp;|&nbsp;
+                        <i class="fas fa-folder me-1"></i>{{ task.case.title|truncatechars:40 }}
+                    </div>
+                    <div class="text-danger small mt-1">
+                        <i class="fas fa-calendar me-1"></i>كان مستحقاً في {{ task.due_date|date:"d/m/Y" }}
+                        (متأخرة {{ task.days_remaining|stringformat:"d"|slice:"1:" }} يوم)
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'task-complete' task.pk %}" class="btn btn-sm btn-success"
+                       onclick="return confirm('تأكيد إكمال المهمة؟')">
+                        <i class="fas fa-check me-1"></i>إكمال
+                    </a>
+                    <a href="{% url 'task-update' task.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Upcoming Tasks -->
+<div class="content-card card mb-4">
+    <div class="card-header">
+        <i class="fas fa-calendar-check text-primary me-2"></i>المهام القادمة ({{ upcoming.count }})
+    </div>
+    <div class="card-body">
+        {% for task in upcoming %}
+        <div class="task-item {{ task.priority }}">
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <span class="fw-semibold">{{ task.title }}</span>
+                        <span class="badge badge-priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                        <span class="badge bg-light text-dark">{{ task.get_task_type_display }}</span>
+                        <span class="badge {% if task.status == 'in_progress' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        {{ task.case.client.name }} | {{ task.case.title|truncatechars:40 }}
+                    </div>
+                    <div class="small mt-1">
+                        <i class="fas fa-calendar me-1"></i>{{ task.due_date|date:"d/m/Y" }}
+                        {% if task.days_remaining == 0 %}<span class="text-warning fw-bold ms-1">اليوم!</span>
+                        {% elif task.days_remaining == 1 %}<span class="text-warning ms-1">غداً</span>
+                        {% elif task.days_remaining <= 7 %}<span class="text-info ms-1">خلال {{ task.days_remaining }} أيام</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'task-complete' task.pk %}" class="btn btn-sm btn-success"
+                       onclick="return confirm('تأكيد إكمال المهمة؟')">
+                        <i class="fas fa-check"></i>
+                    </a>
+                    <a href="{% url 'task-update' task.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">
+            <i class="fas fa-calendar-check fa-2x mb-2 text-success"></i>
+            <p>لا توجد مهام قادمة</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Completed Tasks -->
+<div class="content-card card">
+    <div class="card-header">
+        <i class="fas fa-check-circle text-success me-2"></i>المهام المكتملة ({{ completed.count }})
+    </div>
+    <div class="card-body">
+        {% for task in completed %}
+        <div class="task-item" style="border-right-color: #198754; opacity: 0.7;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="fw-semibold text-decoration-line-through">{{ task.title }}</span>
+                    <div class="text-muted small">{{ task.case.client.name }} | {{ task.due_date|date:"d/m/Y" }}</div>
+                    {% if task.completed_at %}
+                    <div class="small text-success">أُكملت في {{ task.completed_at|date:"d/m/Y" }}</div>
+                    {% endif %}
+                </div>
+                <span class="badge bg-success"><i class="fas fa-check me-1"></i>مكتملة</span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">لا توجد مهام مكتملة</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{
+  "name": "ميزان — إدارة مكتب المحاماة",
+  "short_name": "ميزان",
+  "start_url": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#f5f3ee",
+  "theme_color": "#0f2240",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

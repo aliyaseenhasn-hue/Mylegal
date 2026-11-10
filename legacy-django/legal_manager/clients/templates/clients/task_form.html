@@ -1,0 +1,19 @@
+{% extends 'clients/base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">{{ title }}</li>{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="content-card card">
+            <div class="card-header fw-bold"><i class="fas fa-edit me-2"></i>{{ title }}</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {% crispy form %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

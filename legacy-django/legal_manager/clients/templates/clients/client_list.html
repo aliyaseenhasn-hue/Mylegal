@@ -1,0 +1,71 @@
+{% extends 'clients/base.html' %}
+{% block title %}الموكلون{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">الموكلون</li>{% endblock %}
+{% block content %}
+<div class="content-card card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-users me-2"></i>قائمة الموكلين</span>
+        <a href="{% url 'client-create' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>إضافة موكل
+        </a>
+    </div>
+    <div class="card-body">
+        <form class="row g-3 mb-4">
+            <div class="col-md-8">
+                <input type="text" name="q" value="{{ q }}" class="form-control"
+                       placeholder="بحث بالاسم أو الهاتف أو رقم الهوية...">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>بحث</button>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>اسم الموكل</th>
+                        <th>رقم الهاتف</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>القضايا النشطة</th>
+                        <th>تاريخ الإضافة</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td class="fw-semibold">{{ client.name }}</td>
+                        <td>{{ client.phone }}</td>
+                        <td>{{ client.email|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ client.active_cases_count }}</span>
+                        </td>
+                        <td>{{ client.created_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'client-detail' client.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'client-update' client.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'client-delete' client.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <p class="mb-0">لا يوجد موكلون مسجلون</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

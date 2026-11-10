@@ -1,0 +1,247 @@
+{% extends 'clients/base.html' %}
+{% block title %}لوحة التحكم - مكتب المحاماة{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">لوحة التحكم</li>{% endblock %}
+
+{% block content %}
+<!-- Stats Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="stat-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:#e8f4fd;">
+                    <i class="fas fa-users text-primary"></i>
+                </div>
+                <div>
+                    <div class="stat-number text-primary">{{ stats.total_clients }}</div>
+                    <div class="stat-label">إجمالي الموكلين</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:#e8f7f0;">
+                    <i class="fas fa-folder-open text-success"></i>
+                </div>
+                <div>
+                    <div class="stat-number text-success">{{ stats.active_cases }}</div>
+                    <div class="stat-label">قضايا نشطة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:#fff3e0;">
+                    <i class="fas fa-tasks text-warning"></i>
+                </div>
+                <div>
+                    <div class="stat-number text-warning">{{ stats.pending_tasks }}</div>
+                    <div class="stat-label">مهام معلقة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:#fdecea;">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                </div>
+                <div>
+                    <div class="stat-number text-danger">{{ stats.overdue_tasks }}</div>
+                    <div class="stat-label">مهام متأخرة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="fee-summary h-100">
+            <div class="d-flex justify-content-between mb-3">
+                <div>
+                    <div class="opacity-75 small">إجمالي الأتعاب</div>
+                    <div class="fs-3 fw-bold">{{ stats.total_fees|floatformat:0 }} <small>ريال</small></div>
+                </div>
+                <i class="fas fa-money-bill-wave fa-2x opacity-50"></i>
+            </div>
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="fw-bold fs-5 text-warning">{{ stats.total_paid|floatformat:0 }}</div>
+                    <div class="opacity-75 small">المدفوع</div>
+                </div>
+                <div class="col-6">
+                    <div class="fw-bold fs-5">{{ stats.total_remaining|floatformat:0 }}</div>
+                    <div class="opacity-75 small">المتبقي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="content-card card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-bell text-warning me-2"></i>التنبيهات الحديثة</span>
+                <a href="{% url 'notifications' %}" class="btn btn-sm btn-outline-warning">عرض الكل</a>
+            </div>
+            <div class="card-body p-0">
+                {% if notifications %}
+                    <div class="list-group list-group-flush">
+                        {% for notif in notifications %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="fas fa-{% if notif.notification_type == 'task_overdue' %}exclamation-circle text-danger{% else %}clock text-warning{% endif %} mt-1"></i>
+                                <div>
+                                    <div class="fw-semibold small">{{ notif.title }}</div>
+                                    <div class="text-muted small">{{ notif.message }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+                        <p class="mb-0">لا توجد تنبيهات جديدة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks & Cases -->
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="content-card card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-fire text-danger me-2"></i>مهام متأخرة</span>
+                <a href="{% url 'task-list' %}" class="btn btn-sm btn-outline-danger">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                {% if overdue_tasks %}
+                    {% for task in overdue_tasks %}
+                    <div class="task-item overdue {{ task.priority }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{ task.title }}</div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-folder me-1"></i>{{ task.case.client.name }} - {{ task.case.title|truncatechars:30 }}
+                                </div>
+                                <div class="text-danger small mt-1">
+                                    <i class="fas fa-clock me-1"></i>متأخرة {{ task.days_remaining|stringformat:'d'|cut:'-' }} يوم
+                                </div>
+                            </div>
+                            <a href="{% url 'task-complete' task.pk %}" class="btn btn-sm btn-success" onclick="return confirm('تأكيد إكمال المهمة؟')">
+                                <i class="fas fa-check"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                        <p class="mb-0">لا توجد مهام متأخرة!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="content-card card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-calendar text-primary me-2"></i>مهام هذا الأسبوع</span>
+                <a href="{% url 'task-create' %}" class="btn btn-sm btn-primary">+ مهمة جديدة</a>
+            </div>
+            <div class="card-body">
+                {% if upcoming_tasks %}
+                    {% for task in upcoming_tasks %}
+                    <div class="task-item {{ task.priority }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold">{{ task.title }}</div>
+                                <div class="text-muted small">{{ task.case.client.name }}</div>
+                                <div class="small mt-1">
+                                    {% if task.days_remaining == 0 %}
+                                        <span class="text-warning fw-bold">اليوم</span>
+                                    {% elif task.days_remaining == 1 %}
+                                        <span class="text-warning">غداً</span>
+                                    {% else %}
+                                        <span class="text-info">خلال {{ task.days_remaining }} أيام</span>
+                                    {% endif %}
+                                    - {{ task.due_date|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                            <span class="badge badge-priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                        <p class="mb-0">لا توجد مهام هذا الأسبوع</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="content-card card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-folder-open me-2"></i>آخر القضايا</span>
+                <a href="{% url 'case-create' %}" class="btn btn-sm btn-primary">+ قضية جديدة</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>عنوان القضية</th>
+                                <th>الموكل</th>
+                                <th>الحالة</th>
+                                <th>الأتعاب</th>
+                                <th>المدفوع</th>
+                                <th>المتبقي</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in recent_cases %}
+                            <tr>
+                                <td class="fw-semibold">{{ case.title|truncatechars:35 }}</td>
+                                <td>{{ case.client.name }}</td>
+                                <td>
+                                    <span class="badge {% if case.status == 'active' %}bg-success{% elif case.status == 'archived' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                                        {{ case.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ case.total_fees|floatformat:0 }}</td>
+                                <td class="text-success fw-semibold">{{ case.paid_fees|floatformat:0 }}</td>
+                                <td class="text-danger fw-semibold">{{ case.remaining_fees|floatformat:0 }}</td>
+                                <td>
+                                    <a href="{% url 'case-detail' case.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Custom filter for abs value
+</script>
+{% endblock %}

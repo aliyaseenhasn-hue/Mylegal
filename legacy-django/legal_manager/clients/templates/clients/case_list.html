@@ -1,0 +1,89 @@
+{% extends 'clients/base.html' %}
+{% block title %}القضايا{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">القضايا</li>{% endblock %}
+{% block content %}
+<div class="content-card card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-folder-open me-2"></i>القضايا والملفات</span>
+        <a href="{% url 'case-create' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-1"></i>قضية جديدة
+        </a>
+    </div>
+    <div class="card-body">
+        <form class="row g-3 mb-4">
+            <div class="col-md-6">
+                <input type="text" name="q" value="{{ q }}" class="form-control"
+                       placeholder="بحث بعنوان القضية أو رقمها أو اسم الموكل...">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">كل الحالات</option>
+                    {% for v, l in status_choices %}
+                    <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-primary w-100"><i class="fas fa-search me-1"></i>بحث</button>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>عنوان القضية</th>
+                        <th>الموكل</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>الأتعاب</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>الجلسة القادمة</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ case.title|truncatechars:35 }}</div>
+                            {% if case.case_number %}<small class="text-muted">رقم: {{ case.case_number }}</small>{% endif %}
+                        </td>
+                        <td>{{ case.client.name }}</td>
+                        <td><span class="badge bg-light text-dark">{{ case.get_case_type_display }}</span></td>
+                        <td>
+                            <span class="badge {% if case.status == 'active' %}bg-success{% elif case.status == 'archived' %}bg-secondary{% elif case.status == 'won' %}bg-info{% elif case.status == 'lost' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                {{ case.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ case.total_fees|floatformat:0 }}</td>
+                        <td class="text-success fw-semibold">{{ case.paid_fees|floatformat:0 }}</td>
+                        <td class="{% if case.remaining_fees > 0 %}text-danger{% else %}text-success{% endif %} fw-semibold">
+                            {{ case.remaining_fees|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if case.next_session %}
+                                <span class="{% if case.next_session < today %}text-danger{% else %}text-primary{% endif %}">
+                                    {{ case.next_session|date:"d/m/Y" }}
+                                </span>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'case-detail' case.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            لا توجد قضايا مسجلة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
