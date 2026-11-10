@@ -129,7 +129,7 @@ export default function Layout() {
     <div className="shell">
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <div className="brand-mark">{office?.logo_url ? <img src={office.logo_url} alt="" /> : <Scale size={22} />}</div>
+          <div className={`brand-mark ${office?.logo_url ? 'has-logo' : ''}`}>{office?.logo_url ? <img src={office.logo_url} alt="" /> : <Scale size={22} />}</div>
           <div style={{ minWidth: 0 }}>
             <div className="brand-name">ميزان</div>
             <div className="brand-sub" title={office?.name}>{office?.name}</div>
