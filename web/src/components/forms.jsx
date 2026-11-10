@@ -5,8 +5,8 @@ import {
   CASE_TYPES, COURT_LEVELS, CLIENT_CAPACITY, CASE_STATUS, PRIORITY, CASE_PRIORITY, TASK_PRIORITY, FEE_TYPES,
   HEARING_STATUS, TASK_STATUS, TASK_TYPES, PAYMENT_METHODS, EXPENSE_CATEGORIES, POA_TYPES, DOC_TYPES, CURRENCIES, opts,
 } from '../lib/labels';
-import { today } from '../lib/format';
-import { Modal, Field, Select, FormShell, useForm, clean, useToast } from './ui';
+import { today, amountInWords } from '../lib/format';
+import { Modal, Field, Select, FormShell, useForm, clean, useToast, MoneyInput } from './ui';
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj?.[k] ?? '']));
 
@@ -162,7 +162,7 @@ export function CaseForm({ kase, clientId, onClose, onSaved }) {
             <Select value={values.fee_type} onChange={set('fee_type')} options={opts(FEE_TYPES)} />
           </Field>
           <Field label="إجمالي الأتعاب المتفق عليها">
-            <input type="number" min={0} step="any" value={values.total_fees} onChange={set('total_fees')} dir="ltr" />
+            <MoneyInput value={values.total_fees} onChange={set('total_fees')} currency={values.currency} />
           </Field>
           <Field label="العملة">
             <Select value={values.currency} onChange={set('currency')} options={opts(CURRENCIES)} />
@@ -258,13 +258,16 @@ export function PaymentForm({ payment, caseId, currency, onClose, onSaved }) {
   return (
     <Modal title={payment ? `تعديل سند القبض #${payment.receipt_no}` : 'سند قبض جديد'} onClose={onClose}>
       <FormShell onCancel={onClose} submitText={payment ? 'حفظ' : 'تسجيل الدفعة'} onSubmit={async () => {
+        if (!(Number(values.amount) > 0)) throw new Error('أدخل مبلغاً صحيحاً أكبر من صفر');
         const saved = await save('payments', payment?.id, { ...values, amount: Number(values.amount) });
         toast(payment ? 'تم تعديل السند' : `تم تسجيل سند القبض رقم ${saved.receipt_no}`);
         onSaved?.(saved);
       }}>
         <div className="form-grid">
           {!caseId && <Field label="القضية" required full><CasePicker value={values.case_id} onChange={set('case_id')} required /></Field>}
-          <Field label="المبلغ" required><input type="number" min={0.01} step="any" value={values.amount} onChange={set('amount')} required dir="ltr" autoFocus /></Field>
+          <Field label="المبلغ" required hint={Number(values.amount) > 0 ? `فقط ${amountInWords(values.amount, values.currency)} لا غير` : undefined}>
+            <MoneyInput value={values.amount} onChange={set('amount')} currency={values.currency} required autoFocus />
+          </Field>
           <Field label="العملة"><Select value={values.currency} onChange={set('currency')} options={opts(CURRENCIES)} /></Field>
           <Field label="تاريخ القبض" required><input type="date" value={values.payment_date} onChange={set('payment_date')} required /></Field>
           <Field label="طريقة الدفع"><Select value={values.method} onChange={set('method')} options={opts(PAYMENT_METHODS)} /></Field>
@@ -287,6 +290,7 @@ export function ExpenseForm({ expense, caseId, currency, onClose, onSaved }) {
   return (
     <Modal title={expense ? 'تعديل المصروف' : 'تسجيل مصروف'} onClose={onClose}>
       <FormShell onCancel={onClose} onSubmit={async () => {
+        if (!(Number(values.amount) > 0)) throw new Error('أدخل مبلغاً صحيحاً أكبر من صفر');
         const saved = await save('expenses', expense?.id, { ...values, amount: Number(values.amount) });
         toast('تم حفظ المصروف');
         onSaved?.(saved);
@@ -294,7 +298,7 @@ export function ExpenseForm({ expense, caseId, currency, onClose, onSaved }) {
         <div className="form-grid">
           {!caseId && <Field label="القضية" full hint="اتركه فارغاً لمصاريف المكتب العامة"><CasePicker value={values.case_id} onChange={set('case_id')} /></Field>}
           <Field label="البند"><Select value={values.category} onChange={set('category')} options={opts(EXPENSE_CATEGORIES)} /></Field>
-          <Field label="المبلغ" required><input type="number" min={0.01} step="any" value={values.amount} onChange={set('amount')} required dir="ltr" /></Field>
+          <Field label="المبلغ" required><MoneyInput value={values.amount} onChange={set('amount')} currency={values.currency} required /></Field>
           <Field label="العملة"><Select value={values.currency} onChange={set('currency')} options={opts(CURRENCIES)} /></Field>
           <Field label="التاريخ" required><input type="date" value={values.expense_date} onChange={set('expense_date')} required /></Field>
           <Field label="الوصف" full><input value={values.description} onChange={set('description')} /></Field>

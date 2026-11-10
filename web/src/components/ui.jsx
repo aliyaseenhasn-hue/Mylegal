@@ -241,3 +241,62 @@ export function clean(obj) {
 export function safeLike(s) {
   return String(s).replace(/[,()%*\\:"']/g, ' ').trim();
 }
+
+/* ---------------- حقل مبلغ بفواصل الآلاف ---------------- */
+const toLatinDigits = (s) => String(s).replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫]/g, '.');
+
+/** يحوّل النص المدخل إلى رقم خام: أرقام ونقطة عشرية واحدة فقط */
+function rawAmount(text, decimals) {
+  let s = toLatinDigits(text).replace(/[^\d.]/g, '');
+  const dot = s.indexOf('.');
+  if (dot !== -1) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, '');
+  if (!decimals) s = s.split('.')[0];
+  else if (dot !== -1) s = s.slice(0, dot + 1 + decimals);
+  return s.replace(/^0+(?=\d)/, '');
+}
+
+export function groupDigits(raw) {
+  if (raw === '' || raw === null || raw === undefined) return '';
+  const [i, d] = String(raw).split('.');
+  const int = (i || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return d !== undefined ? `${int}.${d}` : int;
+}
+
+export function MoneyInput({ value, onChange, currency = 'IQD', required, autoFocus, placeholder }) {
+  const ref = useRef();
+  const decimals = currency === 'USD' ? 2 : 0;
+  const shown = groupDigits(value === 0 || value === '0' ? '0' : value ?? '');
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        ref={ref}
+        type="text"
+        inputMode={decimals ? 'decimal' : 'numeric'}
+        dir="ltr"
+        value={shown}
+        required={required}
+        autoFocus={autoFocus}
+        placeholder={placeholder || (decimals ? '0.00' : '0')}
+        autoComplete="off"
+        style={{ paddingInlineEnd: 46, fontVariantNumeric: 'tabular-nums', fontWeight: 600, letterSpacing: '.3px' }}
+        onChange={(e) => {
+          const el = e.target;
+          // نحافظ على موضع المؤشر بعدّ الأرقام التي قبله
+          const before = toLatinDigits(el.value.slice(0, el.selectionStart)).replace(/[^\d.]/g, '').length;
+          const raw = rawAmount(el.value, decimals);
+          onChange(raw);
+          requestAnimationFrame(() => {
+            if (!ref.current) return;
+            const txt = ref.current.value;
+            let pos = 0, seen = 0;
+            while (pos < txt.length && seen < before) { if (/[\d.]/.test(txt[pos])) seen++; pos++; }
+            ref.current.setSelectionRange(pos, pos);
+          });
+        }}
+      />
+      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', fontSize: 13, pointerEvents: 'none' }}>
+        {currency === 'USD' ? '$' : 'د.ع'}
+      </span>
+    </div>
+  );
+}

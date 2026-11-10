@@ -122,10 +122,15 @@ export function amountInWords(n, currency = 'IQD') {
   for (const [v, [one, two, many]] of scales) {
     const q = Math.floor(n / v);
     if (q) {
+      const r = q % 100;
+      let words = below1000(q);
+      // مائتان ألف ← مائتا ألف (إضافة)
+      if (r === 0 && Math.floor(q / 100) % 10 === 2) words = words.replace(/مائتان$/, 'مائتا');
       if (q === 1) parts.push(one);
       else if (q === 2) parts.push(two);
       else if (q <= 10) parts.push(`${below1000(q)} ${many}`);
-      else parts.push(`${below1000(q)} ${one}`);
+      else if (r >= 3 && r <= 10) parts.push(`${words} ${many}`);
+      else parts.push(`${words} ${one}`);
       n %= v;
     }
   }

@@ -183,7 +183,7 @@ export function ReceiptPage() {
             </div>
             <div className="receipt-row"><b>استلمنا من السيد/ة:</b><span>{p.payer_name || p.client_name}</span></div>
             <div className="receipt-row"><b>مبلغاً وقدره:</b><span className="receipt-amount">{money(p.amount, p.currency)}</span></div>
-            <div className="receipt-row"><b>كتابةً:</b><span>{amountInWords(p.amount, p.currency)} لا غير</span></div>
+            <div className="receipt-row"><b>كتابةً:</b><span>فقط {amountInWords(p.amount, p.currency)} لا غير</span></div>
             <div className="receipt-row"><b>وذلك عن:</b><span>أتعاب المحاماة في الدعوى "{p.case_title}" — ملف رقم {p.file_no}{p.notes ? ` (${p.notes})` : ''}</span></div>
             <div className="receipt-row"><b>طريقة الدفع:</b><span>{label(PAYMENT_METHODS, p.method)}{p.reference ? ` — مرجع ${p.reference}` : ''}</span></div>
             <div className="receipt-sign">
