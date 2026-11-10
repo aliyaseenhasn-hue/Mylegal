@@ -8,7 +8,7 @@ import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { ROLES } from '../lib/labels';
 import { initials } from '../lib/format';
-import { useDebounced } from './ui';
+import { useDebounced, ErrorBoundary } from './ui';
 
 function useTheme() {
   const [theme, setTheme] = useState(() => {
@@ -168,7 +168,9 @@ export default function Layout() {
           </div>
         </header>
         <main className="content">
-          <Outlet />
+          <ErrorBoundary resetKey={loc.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

@@ -75,8 +75,8 @@ export default function ReportsPage() {
                       <td className="muted">#{r.file_no}</td>
                       <td><Link className="t-main link" to={`/cases/${r.id}`}>{r.title}</Link><div className="t-sub">{r.client_name}</div><Progress value={r.paid_percent} /></td>
                       <td>{label(CASE_STATUS, r.status)}</td>
-                      <td>{money(r.total_fees, currency)}</td><td style={{ color: 'var(--success)' }}>{money(r.paid_total, currency)}</td>
-                      <td className="t-main" style={{ color: 'var(--danger)' }}>{money(r.remaining_fees, currency)}</td>
+                      <td data-label="الأتعاب">{money(r.total_fees, currency)}</td><td data-label="المحصّل" style={{ color: 'var(--success)' }}>{money(r.paid_total, currency)}</td>
+                      <td data-label="المتبقي" style={{ color: 'var(--danger)', fontWeight: 600 }}>{money(r.remaining_fees, currency)}</td>
                       <td className="hide-sm small">{r.assigned_name || '—'}</td>
                     </tr>
                   ))}</tbody>
@@ -92,9 +92,9 @@ export default function ReportsPage() {
                   <div className="table-wrap" style={{ marginTop: 16 }}><table className="table">
                     <thead><tr><th>الشهر</th><th>التحصيل</th><th>المصاريف</th><th>الصافي</th></tr></thead>
                     <tbody>{[...d].reverse().map((r) => (
-                      <tr key={r.month}><td>{r.month.slice(0, 7)}</td><td style={{ color: 'var(--success)' }}>{money(r.collected, currency)}</td><td>{money(r.spent, currency)}</td><td className="t-main">{money(r.collected - r.spent, currency)}</td></tr>
+                      <tr key={r.month}><td><span className="t-main">{r.month.slice(0, 7)}</span></td><td data-label="التحصيل" style={{ color: 'var(--success)' }}>{money(r.collected, currency)}</td><td data-label="المصاريف">{money(r.spent, currency)}</td><td data-label="الصافي" className="t-main">{money(r.collected - r.spent, currency)}</td></tr>
                     ))}</tbody>
-                    <tfoot><tr><td>آخر 12 شهراً</td><td>{money(tc, currency)}</td><td>{money(ts, currency)}</td><td>{money(tc - ts, currency)}</td></tr></tfoot>
+                    <tfoot><tr><td>آخر 12 شهراً</td><td data-label="التحصيل">{money(tc, currency)}</td><td data-label="المصاريف">{money(ts, currency)}</td><td data-label="الصافي">{money(tc - ts, currency)}</td></tr></tfoot>
                   </table></div>
                 </div>
               );
@@ -110,11 +110,11 @@ export default function ReportsPage() {
                     return (
                       <tr key={r.user_id}>
                         <td><div className="t-main">{r.full_name}</div><div className="t-sub">{ROLES[r.role]}</div></td>
-                        <td>{r.cases_total}</td><td>{r.cases_active}</td><td>{r.cases_won} / {r.cases_lost}</td>
-                        <td>{rate === null ? '—' : <><b>{rate}%</b><Progress value={rate} green /></>}</td>
+                        <td data-label="القضايا">{r.cases_total}</td><td data-label="النشطة">{r.cases_active}</td><td data-label="كسب/خسارة">{r.cases_won} / {r.cases_lost}</td>
+                        <td data-label="نسبة الكسب">{rate === null ? '—' : <><b>{rate}%</b><Progress value={rate} green /></>}</td>
                         <td className="hide-sm">{r.hearings_done}</td>
                         <td className="hide-sm">{r.tasks_done} / <span style={{ color: r.tasks_overdue ? 'var(--danger)' : undefined }}>{r.tasks_overdue}</span></td>
-                        <td className="small">{money(r.collected_iqd)}{Number(r.collected_usd) > 0 && <div>{money(r.collected_usd, 'USD')}</div>}</td>
+                        <td data-label="التحصيل" className="small">{money(r.collected_iqd)}{Number(r.collected_usd) > 0 && <div>{money(r.collected_usd, 'USD')}</div>}</td>
                       </tr>
                     );
                   })}</tbody>

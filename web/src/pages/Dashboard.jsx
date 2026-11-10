@@ -33,7 +33,7 @@ export function FinanceChart({ months }) {
           <g key={m.month}>
             <rect className="bar" x={x} y={H - hc} width={bw * 0.32} height={hc} rx={3}><title>{`تحصيل: ${money(m.collected)}`}</title></rect>
             <rect className="bar2" x={x + bw * 0.34} y={H - hs} width={bw * 0.32} height={hs} rx={3}><title>{`مصاريف: ${money(m.spent)}`}</title></rect>
-            <text x={x + bw * 0.33} y={H + 17} textAnchor="middle">{MONTHS[d.getMonth()].split(' ')[0]}</text>
+            <text x={x + bw * 0.33} y={H + 17} textAnchor="middle">{MONTHS[d.getMonth()].replace(' الأول', ' 1').replace(' الثاني', ' 2')}</text>
           </g>
         );
       })}

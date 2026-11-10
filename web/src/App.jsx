@@ -1,6 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
-import { ToastProvider, Loader } from './components/ui';
+import { ToastProvider, Loader, ErrorBoundary } from './components/ui';
 import Layout from './components/Layout';
 import { Login, NoOffice } from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -51,7 +51,9 @@ export default function App() {
     <HashRouter>
       <ToastProvider>
         <AuthProvider>
-          <Gate />
+          <ErrorBoundary>
+            <Gate />
+          </ErrorBoundary>
         </AuthProvider>
       </ToastProvider>
     </HashRouter>

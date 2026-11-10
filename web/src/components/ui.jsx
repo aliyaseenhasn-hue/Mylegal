@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Component, createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { X, CheckCircle2, AlertCircle, Inbox, ChevronRight, ChevronLeft } from 'lucide-react';
 
 /* ---------------- إشعارات منبثقة ---------------- */
@@ -31,18 +31,49 @@ export function useAsync(fn, deps = []) {
   const [state, setState] = useState({ data: null, error: null, loading: true });
   const [tick, setTick] = useState(0);
   const alive = useRef(true);
+  const lastKey = useRef(null);
   useEffect(() => () => { alive.current = false; }, []);
+  // مفتاح المدخلات: عند تغيّره (تبويب/فلتر) تُمسح البيانات القديمة كي لا تُعرض بشكل مختلف عن المتوقع
+  const key = JSON.stringify(deps);
   useEffect(() => {
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    const changed = lastKey.current !== null && lastKey.current !== key;
+    lastKey.current = key;
+    setState((s) => (changed ? { data: null, error: null, loading: true } : { ...s, loading: true, error: null }));
     Promise.resolve()
       .then(fn)
       .then((data) => !cancelled && alive.current && setState({ data, error: null, loading: false }))
       .catch((error) => !cancelled && alive.current && setState({ data: null, error, loading: false }));
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick]);
-  return { ...state, reload: () => setTick((t) => t + 1) };
+  }, [key, tick]);
+  // أثناء انتقال المفتاح نعرض التحميل مباشرة (قبل أن يعمل التأثير)
+  const stale = lastKey.current !== null && lastKey.current !== key;
+  return { ...(stale ? { data: null, error: null, loading: true } : state), reload: () => setTick((t) => t + 1) };
+}
+
+/* ---------------- حاجز الأخطاء: خطأ في صفحة لا يُسقط التطبيق ---------------- */
+export class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(error, info) { console.error('UI error', error, info?.componentStack); }
+  componentDidUpdate(prev) { if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null }); }
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="card" style={{ maxWidth: 520, margin: '40px auto' }}>
+        <div className="empty">
+          <AlertCircle size={42} strokeWidth={1.4} color="var(--danger)" />
+          <b>حدث خطأ أثناء عرض هذه الصفحة</b>
+          <div className="small">بقية التطبيق تعمل بشكل طبيعي. أعد المحاولة أو انتقل لصفحة أخرى.</div>
+          <div className="actions" style={{ justifyContent: 'center', marginTop: 14 }}>
+            <button className="btn btn-primary" onClick={() => this.setState({ error: null })}>إعادة المحاولة</button>
+            <a className="btn btn-ghost" href="#/">لوحة التحكم</a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
 
 /* ---------------- نافذة ---------------- */
