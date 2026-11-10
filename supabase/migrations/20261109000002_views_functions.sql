@@ -2,9 +2,10 @@
 -- العروض، دوال التقارير، التنبيهات، التخزين، إنشاء المكتب
 -- =====================================================================
 
--- توقيت بغداد لحساب "اليوم" بشكل صحيح
-alter database postgres set timezone to 'Asia/Baghdad';
-set timezone to 'Asia/Baghdad';
+-- "اليوم" بتوقيت بغداد
+create or replace function app.today() returns date
+language sql stable set search_path = '' as $$ select (now() at time zone 'Asia/Baghdad')::date $$;
+grant execute on function app.today() to authenticated;
 
 -- ---------------------------------------------------------------------
 -- عرض القضايا مع الملخص المالي (يحترم RLS لأن security_invoker)
@@ -29,9 +30,9 @@ left join public.office_members m on m.user_id = c.assigned_to and m.office_id =
 left join lateral (select sum(amount) paid from public.payments where case_id = c.id) p on true
 left join lateral (select sum(amount) spent, sum(amount) filter (where billable) billable from public.expenses where case_id = c.id) e on true
 left join lateral (select min(hearing_date) next_hearing from public.hearings
-                   where case_id = c.id and status = 'scheduled' and hearing_date >= current_date) nh on true
+                   where case_id = c.id and status = 'scheduled' and hearing_date >= app.today()) nh on true
 left join lateral (select count(*) filter (where status in ('pending','in_progress')) open_tasks,
-                          count(*) filter (where status in ('pending','in_progress') and due_date < current_date) overdue_tasks
+                          count(*) filter (where status in ('pending','in_progress') and due_date < app.today()) overdue_tasks
                    from public.tasks where case_id = c.id) t on true;
 
 create or replace view public.client_overview with (security_invoker = true) as
@@ -101,12 +102,12 @@ language sql stable security invoker set search_path = '' as $$
     'active_cases', (select count(*) from public.cases where status in ('preparing','active','suspended')),
     'closed_cases', (select count(*) from public.cases where status in ('won','lost','settled','closed','archived')),
     'won_cases', (select count(*) from public.cases where status = 'won'),
-    'hearings_today', (select count(*) from public.hearings where hearing_date = current_date and status = 'scheduled'),
-    'hearings_week', (select count(*) from public.hearings where hearing_date between current_date and current_date + 7 and status = 'scheduled'),
+    'hearings_today', (select count(*) from public.hearings where hearing_date = app.today() and status = 'scheduled'),
+    'hearings_week', (select count(*) from public.hearings where hearing_date between app.today() and app.today() + 7 and status = 'scheduled'),
     'open_tasks', (select count(*) from public.tasks where status in ('pending','in_progress')),
-    'overdue_tasks', (select count(*) from public.tasks where status in ('pending','in_progress') and due_date < current_date),
+    'overdue_tasks', (select count(*) from public.tasks where status in ('pending','in_progress') and due_date < app.today()),
     'my_open_tasks', (select count(*) from public.tasks where status in ('pending','in_progress') and assigned_to = auth.uid()),
-    'poa_expiring', (select count(*) from public.powers_of_attorney where expiry_date between current_date and current_date + 30),
+    'poa_expiring', (select count(*) from public.powers_of_attorney where expiry_date between app.today() and app.today() + 30),
     'finance', coalesce((
       select jsonb_agg(jsonb_build_object('currency', cur, 'fees', fees, 'paid', paid, 'expenses', spent,
                                           'month_paid', month_paid, 'remaining', greatest(fees - paid, 0)))
@@ -116,7 +117,7 @@ language sql stable security invoker set search_path = '' as $$
                coalesce((select sum(amount) from public.payments where currency = cur), 0) paid,
                coalesce((select sum(amount) from public.expenses where currency = cur), 0) spent,
                coalesce((select sum(amount) from public.payments where currency = cur
-                          and payment_date >= date_trunc('month', current_date)), 0) month_paid
+                          and payment_date >= date_trunc('month', app.today())), 0) month_paid
         from unnest(array['IQD','USD']) cur
       ) f
       where fees > 0 or paid > 0 or spent > 0 or cur = 'IQD'
@@ -129,7 +130,7 @@ create or replace function public.monthly_finance(p_months int default 12, p_cur
 returns table(month date, collected numeric, spent numeric)
 language sql stable security invoker set search_path = '' as $$
   with months as (
-    select (date_trunc('month', current_date) - (n || ' month')::interval)::date as month
+    select (date_trunc('month', app.today()) - (n || ' month')::interval)::date as month
     from generate_series(0, greatest(least(p_months, 36), 1) - 1) n
   )
   select m.month,
@@ -155,7 +156,7 @@ language sql stable security invoker set search_path = '' as $$
         and (p_from is null or h.hearing_date >= p_from) and (p_to is null or h.hearing_date <= p_to)),
     (select count(*) from public.tasks t where t.assigned_to = m.user_id and t.status = 'completed'
         and (p_from is null or t.completed_at::date >= p_from) and (p_to is null or t.completed_at::date <= p_to)),
-    (select count(*) from public.tasks t where t.assigned_to = m.user_id and t.status in ('pending','in_progress') and t.due_date < current_date),
+    (select count(*) from public.tasks t where t.assigned_to = m.user_id and t.status in ('pending','in_progress') and t.due_date < app.today()),
     (select coalesce(sum(p.amount),0) from public.payments p join public.cases c on c.id = p.case_id
       where c.assigned_to = m.user_id and p.currency = 'IQD'
         and (p_from is null or p.payment_date >= p_from) and (p_to is null or p.payment_date <= p_to)),
@@ -234,17 +235,17 @@ begin
   -- مهام مستحقة قريباً أو متأخرة: للمسند إليه
   insert into public.notifications(office_id, user_id, kind, title, body, link, ref_id, dedupe_key)
   select t.office_id, t.assigned_to,
-         case when t.due_date < current_date then 'task_overdue' else 'task_due' end,
-         case when t.due_date < current_date then 'مهمة متأخرة: ' else 'مهمة مستحقة: ' end || t.title,
-         case when t.due_date < current_date then 'متأخرة منذ ' || (current_date - t.due_date) || ' يوم'
-              when t.due_date = current_date then 'مستحقة اليوم'
-              else 'تستحق خلال ' || (t.due_date - current_date) || ' يوم' end,
+         case when t.due_date < app.today() then 'task_overdue' else 'task_due' end,
+         case when t.due_date < app.today() then 'مهمة متأخرة: ' else 'مهمة مستحقة: ' end || t.title,
+         case when t.due_date < app.today() then 'متأخرة منذ ' || (app.today() - t.due_date) || ' يوم'
+              when t.due_date = app.today() then 'مستحقة اليوم'
+              else 'تستحق خلال ' || (t.due_date - app.today()) || ' يوم' end,
          '/tasks', t.id,
-         'task:' || t.id || ':' || current_date
+         'task:' || t.id || ':' || app.today()
   from public.tasks t
   join public.office_members m on m.user_id = t.assigned_to and m.office_id = t.office_id and m.active
   where t.status in ('pending','in_progress') and t.assigned_to is not null
-    and t.due_date <= current_date + t.reminder_days
+    and t.due_date <= app.today() + t.reminder_days
     and (p_user is null or t.assigned_to = p_user)
   on conflict (user_id, dedupe_key) do nothing;
   get diagnostics c = row_count; n := n + c;
@@ -252,7 +253,7 @@ begin
   -- جلسات اليوم والغد: للمحامي المسؤول وللإدارة
   insert into public.notifications(office_id, user_id, kind, title, body, link, ref_id, dedupe_key)
   select h.office_id, m.user_id, 'hearing_soon',
-         case when h.hearing_date = current_date then 'جلسة اليوم: ' else 'جلسة غداً: ' end || c.title,
+         case when h.hearing_date = app.today() then 'جلسة اليوم: ' else 'جلسة غداً: ' end || c.title,
          coalesce(h.court, c.court, '') || coalesce(' — ' || to_char(h.hearing_time, 'HH24:MI'), ''),
          '/cases/' || c.id, h.id,
          'hearing:' || h.id || ':' || h.hearing_date
@@ -260,7 +261,7 @@ begin
   join public.cases c on c.id = h.case_id
   join public.office_members m on m.office_id = h.office_id and m.active
        and (m.user_id = c.assigned_to or m.role in ('owner','admin','secretary'))
-  where h.status = 'scheduled' and h.hearing_date between current_date and current_date + 1
+  where h.status = 'scheduled' and h.hearing_date between app.today() and app.today() + 1
     and (p_user is null or m.user_id = p_user)
   on conflict (user_id, dedupe_key) do nothing;
   get diagnostics c = row_count; n := n + c;
@@ -274,7 +275,7 @@ begin
   from public.powers_of_attorney p
   join public.clients cl on cl.id = p.client_id
   join public.office_members m on m.office_id = p.office_id and m.active and m.role in ('owner','admin','secretary')
-  where p.expiry_date between current_date and current_date + 30
+  where p.expiry_date between app.today() and app.today() + 30
     and (p_user is null or m.user_id = p_user)
   on conflict (user_id, dedupe_key) do nothing;
   get diagnostics c = row_count; n := n + c;

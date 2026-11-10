@@ -152,7 +152,7 @@ create table public.cases (
   fee_type text not null default 'fixed' check (fee_type in ('fixed','percentage','installments','pro_bono')),
   total_fees numeric(14,2) not null default 0 check (total_fees >= 0),
   currency text not null default 'IQD' check (currency in ('IQD','USD')),
-  opened_at date not null default current_date,
+  opened_at date not null default (now() at time zone 'Asia/Baghdad')::date,
   closed_at date,
   assigned_to uuid references auth.users(id) on delete set null,
   created_by uuid references auth.users(id) on delete set null,
@@ -222,7 +222,7 @@ create table public.payments (
   case_id uuid not null references public.cases(id) on delete restrict,
   amount numeric(14,2) not null check (amount > 0),
   currency text not null default 'IQD' check (currency in ('IQD','USD')),
-  payment_date date not null default current_date,
+  payment_date date not null default (now() at time zone 'Asia/Baghdad')::date,
   method text not null default 'cash' check (method in ('cash','bank_transfer','zaincash','qi_card','check','other')),
   payer_name text,
   reference text,
@@ -241,7 +241,7 @@ create table public.expenses (
   category text not null default 'other' check (category in ('court_fees','expert','transport','stamps','notification','translation','office','salary','rent','other')),
   amount numeric(14,2) not null check (amount > 0),
   currency text not null default 'IQD' check (currency in ('IQD','USD')),
-  expense_date date not null default current_date,
+  expense_date date not null default (now() at time zone 'Asia/Baghdad')::date,
   billable boolean not null default true,
   description text,
   created_by uuid references auth.users(id) on delete set null,
@@ -404,7 +404,7 @@ create or replace function app.case_closing() returns trigger
 language plpgsql set search_path = '' as $$
 begin
   if new.status in ('won','lost','settled','closed','archived') and new.closed_at is null then
-    new.closed_at := current_date;
+    new.closed_at := (now() at time zone 'Asia/Baghdad')::date;
   elsif new.status in ('preparing','active','suspended') then
     new.closed_at := null;
   end if;
