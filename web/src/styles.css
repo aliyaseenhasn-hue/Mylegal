@@ -331,7 +331,7 @@ a.list-item:hover { background: var(--surface-2); }
 .rc::before { content: ""; position: absolute; inset: 0; height: 6px; background: linear-gradient(90deg, var(--rc-gold), #e4c27a, var(--rc-gold)); }
 .rc-head { display: flex; justify-content: space-between; align-items: stretch; gap: 20px; padding: 32px 34px 24px; border-bottom: 1px solid var(--rc-line); }
 .rc-office { display: flex; gap: 16px; align-items: center; min-width: 0; }
-.rc-logo { width: 64px; height: 64px; flex-shrink: 0; border-radius: 14px; overflow: hidden; display: grid; place-items: center; }
+.rc-logo { width: 76px; height: 92px; flex-shrink: 0; border-radius: 14px; overflow: hidden; display: grid; place-items: center; }
 .rc-logo img { width: 100%; height: 100%; object-fit: contain; }
 .rc-office h2 { font-family: var(--font-display); color: var(--rc-navy); font-size: 28px; line-height: 1.2; }
 .rc-meta { color: var(--rc-muted); font-size: 13px; margin-top: 2px; }
