@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Plus, Receipt, Wallet, Printer, Download, Pencil, Search, ArrowRight } from 'lucide-react';
+import { Plus, Receipt, Wallet, Printer, Download, Pencil, Search, ArrowRight, Send } from 'lucide-react';
 import { supabase, must } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { money, date, today, exportCsv, amountInWords } from '../lib/format';
+import { money, date, dateTime, today, exportCsv, amountInWords } from '../lib/format';
 import { PAYMENT_METHODS, EXPENSE_CATEGORIES, CURRENCIES, label, opts } from '../lib/labels';
 import { PageHead } from '../components/Layout';
 import { useAsync, Async, Empty, Tabs, Select, Stat, Pager, useDebounced, safeLike } from '../components/ui';
@@ -149,51 +149,116 @@ export default function FinancePage() {
   );
 }
 
+const LOGO = (
+  <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0f2240" /><path d="M32 12v40M20 52h24M14 22h36M14 22l-6 14a7 7 0 0 0 12 0zM50 22l-6 14a7 7 0 0 0 12 0z" stroke="#d4a64a" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+);
+
 export function ReceiptPage() {
   const { id } = useParams();
   const { office } = useAuth();
   const nav = useNavigate();
-  const state = useAsync(async () => must(await supabase.from('payment_register').select('*').eq('id', id).single()), [id]);
+  const state = useAsync(async () => {
+    const p = must(await supabase.from('payment_register').select('*').eq('id', id).single());
+    const [kase, client, all] = await Promise.all([
+      supabase.from('cases').select('case_number, case_year, court, total_fees, fee_type, currency').eq('id', p.case_id).single().then(must),
+      supabase.from('clients').select('phone').eq('id', p.client_id).single().then(must),
+      supabase.from('payments').select('id, amount, currency, payment_date, receipt_no').eq('case_id', p.case_id).then(must),
+    ]);
+    // المدفوع حتى هذا السند (بنفس العملة) لحساب الرصيد بعد الدفعة
+    const order = (x) => `${x.payment_date}-${String(x.receipt_no).padStart(9, '0')}`;
+    const paidUntil = all.filter((x) => x.currency === p.currency && order(x) <= order(p)).reduce((a, x) => a + Number(x.amount), 0);
+    return { p, kase, client, paidUntil };
+  }, [id]);
+
   return (
     <Async state={state}>
-      {(p) => (
-        <>
-          <div className="page-head no-print">
-            <button className="btn btn-ghost" onClick={() => nav(-1)}><ArrowRight size={16} />رجوع</button>
-            <div className="actions">
-              <Link className="btn btn-ghost" to={`/cases/${p.case_id}`}>فتح القضية</Link>
-              <button className="btn btn-primary" onClick={() => window.print()}><Printer size={17} />طباعة السند</button>
-            </div>
-          </div>
-          <div className="receipt">
-            <div className="receipt-head">
-              <div>
-                <h2>{office?.name}</h2>
-                <div style={{ color: '#555' }}>{[office?.address, office?.city].filter(Boolean).join(' — ')}</div>
-                <div style={{ color: '#555' }} className="num">{office?.phone}</div>
+      {({ p, kase, client, paidUntil }) => {
+        const sameCurrency = kase.currency === p.currency;
+        const fees = Number(kase.total_fees || 0);
+        const remaining = Math.max(0, fees - paidUntil);
+        const showBalance = sameCurrency && fees > 0 && kase.fee_type !== 'pro_bono';
+        const no = String(p.receipt_no).padStart(4, '0');
+        const purpose = p.notes || `أتعاب المحاماة`;
+        const share = () => {
+          const lines = [
+            `*${office?.name}*`, `سند قبض رقم ${no} — ${date(p.payment_date)}`, '',
+            `استلمنا من: ${p.payer_name || p.client_name}`, `المبلغ: ${money(p.amount, p.currency)}`,
+            `فقط ${amountInWords(p.amount, p.currency)} لا غير`, `عن: ${purpose} — ${p.case_title}`,
+            ...(showBalance ? ['', `إجمالي الأتعاب: ${money(fees, p.currency)}`, `المدفوع حتى الآن: ${money(paidUntil, p.currency)}`, `المتبقي: ${money(remaining, p.currency)}`] : []),
+            '', 'شكراً لثقتكم.',
+          ];
+          const phone = (client.phone || '').replace(/\D/g, '').replace(/^0/, '964');
+          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank', 'noopener');
+        };
+        return (
+          <>
+            <div className="page-head no-print">
+              <button className="btn btn-ghost" onClick={() => nav(-1)}><ArrowRight size={16} />رجوع</button>
+              <div className="actions">
+                <Link className="btn btn-ghost" to={`/cases/${p.case_id}`}>فتح القضية</Link>
+                {client.phone && <button className="btn btn-ghost" onClick={share}><Send size={16} />إرسال للموكل</button>}
+                <button className="btn btn-primary" onClick={() => window.print()}><Printer size={17} />طباعة</button>
               </div>
-              {office?.logo_url ? <img src={office.logo_url} alt="" style={{ width: 84, height: 84, objectFit: 'contain' }} /> : (
-                <svg width="70" height="70" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0f2240" /><path d="M32 12v40M20 52h24M14 22h36M14 22l-6 14a7 7 0 0 0 12 0zM50 22l-6 14a7 7 0 0 0 12 0z" stroke="#d4a64a" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+
+            <article className="rc">
+              <header className="rc-head">
+                <div className="rc-office">
+                  <div className="rc-logo">{office?.logo_url ? <img src={office.logo_url} alt="" /> : LOGO}</div>
+                  <div>
+                    <h2>{office?.name}</h2>
+                    <div className="rc-meta">
+                      {[office?.address, office?.city].filter(Boolean).join('، ')}
+                      {office?.phone && <> · <span className="num">{office.phone}</span></>}
+                    </div>
+                    {office?.bar_number && <div className="rc-meta">رقم الهوية النقابية: <span className="num">{office.bar_number}</span></div>}
+                  </div>
+                </div>
+                <div className="rc-badge">
+                  <div className="rc-badge-title">سند قبض</div>
+                  <div className="rc-badge-row"><span>رقم</span><b className="num">{no}</b></div>
+                  <div className="rc-badge-row"><span>التاريخ</span><b>{date(p.payment_date)}</b></div>
+                </div>
+              </header>
+
+              <section className="rc-amount">
+                <div className="rc-amount-label">المبلغ المستلم</div>
+                <div className="rc-amount-value num">{money(p.amount, p.currency)}</div>
+                <div className="rc-amount-words">فقط {amountInWords(p.amount, p.currency)} لا غير</div>
+              </section>
+
+              <dl className="rc-fields">
+                <div><dt>استلمنا من السيد/ة</dt><dd>{p.payer_name || p.client_name}{p.payer_name && p.payer_name !== p.client_name && <small> (عن الموكل {p.client_name})</small>}</dd></div>
+                <div><dt>وذلك عن</dt><dd>{purpose}</dd></div>
+                <div><dt>الدعوى</dt><dd>{p.case_title}<small> — ملف رقم {p.file_no}</small></dd></div>
+                {(kase.case_number || kase.court) && (
+                  <div><dt>رقم الدعوى / المحكمة</dt><dd>{[kase.case_number && `${kase.case_number}${kase.case_year ? `/${kase.case_year}` : ''}`, kase.court].filter(Boolean).join(' — ')}</dd></div>
+                )}
+                <div><dt>طريقة الدفع</dt><dd>{label(PAYMENT_METHODS, p.method)}{p.reference && <small> — رقم المرجع <span className="num">{p.reference}</span></small>}</dd></div>
+              </dl>
+
+              {showBalance && (
+                <section className="rc-balance">
+                  <div><span>إجمالي الأتعاب</span><b className="num">{money(fees, p.currency)}</b></div>
+                  <div><span>المدفوع حتى الآن</span><b className="num">{money(paidUntil, p.currency)}</b></div>
+                  <div className={remaining > 0 ? 'due' : 'paid'}><span>المتبقي</span><b className="num">{remaining > 0 ? money(remaining, p.currency) : 'مسدّد بالكامل'}</b></div>
+                </section>
               )}
-            </div>
-            <div className="receipt-title"><span>سند قبض</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div>رقم السند: <b>{p.receipt_no}</b></div>
-              <div>التاريخ: <b>{date(p.payment_date)}</b></div>
-            </div>
-            <div className="receipt-row"><b>استلمنا من السيد/ة:</b><span>{p.payer_name || p.client_name}</span></div>
-            <div className="receipt-row"><b>مبلغاً وقدره:</b><span className="receipt-amount">{money(p.amount, p.currency)}</span></div>
-            <div className="receipt-row"><b>كتابةً:</b><span>فقط {amountInWords(p.amount, p.currency)} لا غير</span></div>
-            <div className="receipt-row"><b>وذلك عن:</b><span>أتعاب المحاماة في الدعوى "{p.case_title}" — ملف رقم {p.file_no}{p.notes ? ` (${p.notes})` : ''}</span></div>
-            <div className="receipt-row"><b>طريقة الدفع:</b><span>{label(PAYMENT_METHODS, p.method)}{p.reference ? ` — مرجع ${p.reference}` : ''}</span></div>
-            <div className="receipt-sign">
-              <div>توقيع المستلم<br /><small>{p.created_by_name}</small></div>
-              <div>الختم</div>
-            </div>
-            {office?.receipt_footer && <div style={{ marginTop: 30, fontSize: 12.5, color: '#666', textAlign: 'center' }}>{office.receipt_footer}</div>}
-          </div>
-        </>
-      )}
+
+              <section className="rc-sign">
+                <div><div className="rc-line" /><b>توقيع المستلم</b><small>{p.created_by_name}</small></div>
+                <div><div className="rc-line" /><b>توقيع الدافع</b><small>{p.payer_name || p.client_name}</small></div>
+                <div className="rc-stamp">الختم</div>
+              </section>
+
+              <footer className="rc-foot">
+                {office?.receipt_footer && <div>{office.receipt_footer}</div>}
+                <div className="rc-foot-meta">صدر عن نظام ميزان لإدارة مكاتب المحاماة · {dateTime(p.created_at)}</div>
+              </footer>
+            </article>
+          </>
+        );
+      }}
     </Async>
   );
 }
