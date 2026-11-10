@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { BellRing } from 'lucide-react';
 import { supabase, must } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import {
   CASE_TYPES, COURT_LEVELS, CLIENT_CAPACITY, CASE_STATUS, PRIORITY, CASE_PRIORITY, TASK_PRIORITY, FEE_TYPES,
   HEARING_STATUS, TASK_STATUS, TASK_TYPES, PAYMENT_METHODS, EXPENSE_CATEGORIES, POA_TYPES, DOC_TYPES, CURRENCIES, opts,
 } from '../lib/labels';
-import { today, amountInWords } from '../lib/format';
+import { today, addDays, amountInWords, baghdadToIso, isoToBaghdad, reminderText } from '../lib/format';
 import { Modal, Field, Select, FormShell, useForm, clean, useToast, MoneyInput } from './ui';
 
 const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj?.[k] ?? '']));
@@ -217,18 +218,58 @@ export function HearingForm({ hearing, caseId, defaultCourt, onClose, onSaved })
 }
 
 /* ---------- المهمة ---------- */
+const REMIND_OPTIONS = [
+  { value: 'none', label: 'بدون تذكير' },
+  { value: 'at', label: 'عند موعد المهمة', needsTime: true },
+  { value: '15m', label: 'قبل 15 دقيقة', needsTime: true },
+  { value: '1h', label: 'قبل ساعة', needsTime: true },
+  { value: '3h', label: 'قبل 3 ساعات', needsTime: true },
+  { value: 'morning', label: 'صباح يوم الموعد (8:00 ص)' },
+  { value: '1d', label: 'قبل يوم' },
+  { value: '2d', label: 'قبل يومين' },
+  { value: 'custom', label: 'تاريخ ووقت آخر…' },
+];
+
+/** يحسب وقت التذكير (ISO) من نوع التذكير وموعد المهمة */
+function computeRemindAt(mode, dueDate, dueTime, custom) {
+  if (mode === 'none' || !dueDate) return null;
+  if (mode === 'custom') return baghdadToIso(custom);
+  const t = (dueTime || '').slice(0, 5);
+  const at = baghdadToIso(`${dueDate}T${t || '09:00'}`);
+  const minus = (min) => new Date(new Date(at).getTime() - min * 60000).toISOString();
+  switch (mode) {
+    case 'at': return at;
+    case '15m': return minus(15);
+    case '1h': return minus(60);
+    case '3h': return minus(180);
+    case 'morning': return baghdadToIso(`${dueDate}T08:00`);
+    case '1d': return t ? minus(1440) : baghdadToIso(`${addDays(dueDate, -1)}T08:00`);
+    case '2d': return t ? minus(2880) : baghdadToIso(`${addDays(dueDate, -2)}T08:00`);
+    default: return null;
+  }
+}
+
 export function TaskForm({ task, caseId, onClose, onSaved }) {
   const toast = useToast();
   const { user } = useAuth();
   const { values, set } = useForm({
-    case_id: caseId || '', task_type: 'other', priority: 'medium', status: 'pending', due_date: today(), reminder_days: 2, assigned_to: user.id,
-    ...(task ? Object.fromEntries(Object.entries(pick(task, ['case_id', 'title', 'description', 'task_type', 'priority', 'status', 'due_date', 'due_time', 'reminder_days', 'assigned_to'])).filter(([, v]) => v !== '')) : {}),
+    case_id: caseId || '', task_type: 'other', priority: 'medium', status: 'pending', due_date: today(), assigned_to: user.id,
+    ...(task ? Object.fromEntries(Object.entries(pick(task, ['case_id', 'title', 'description', 'task_type', 'priority', 'status', 'due_date', 'due_time', 'assigned_to'])).filter(([, v]) => v !== '')) : {}),
   });
+  const [mode, setMode] = useState(task ? (task.remind_at ? 'custom' : 'none') : 'morning');
+  const [custom, setCustom] = useState(task?.remind_at ? isoToBaghdad(task.remind_at) : '');
+  const dueTime = (values.due_time || '').slice(0, 5);
+  const remindAt = computeRemindAt(mode, values.due_date, dueTime, custom);
+  const past = remindAt && new Date(remindAt) < new Date();
+  const chosen = REMIND_OPTIONS.find((o) => o.value === mode);
+
   return (
     <Modal title={task ? 'تعديل المهمة' : 'إضافة مهمة'} onClose={onClose}>
       <FormShell onCancel={onClose} onSubmit={async () => {
-        const saved = await save('tasks', task?.id, { ...values, reminder_days: Number(values.reminder_days || 0), due_time: values.due_time || null });
-        toast('تم حفظ المهمة');
+        if (mode === 'custom' && !custom) throw new Error('حدد تاريخ ووقت التذكير');
+        if (past && (!task || remindAt !== task.remind_at)) throw new Error('وقت التذكير المختار مضى، اختر وقتاً لاحقاً');
+        const saved = await save('tasks', task?.id, { ...values, due_time: dueTime || null, remind_at: remindAt });
+        toast(remindAt ? `تم حفظ المهمة — التذكير ${reminderText(remindAt)}` : 'تم حفظ المهمة');
         onSaved?.(saved);
       }}>
         <div className="form-grid">
@@ -236,11 +277,32 @@ export function TaskForm({ task, caseId, onClose, onSaved }) {
           {!caseId && <Field label="القضية المرتبطة" full hint="اتركه فارغاً لمهمة عامة للمكتب"><CasePicker value={values.case_id} onChange={set('case_id')} /></Field>}
           <Field label="نوع المهمة"><Select value={values.task_type} onChange={set('task_type')} options={opts(TASK_TYPES)} /></Field>
           <Field label="الأولوية"><Select value={values.priority} onChange={set('priority')} options={TASK_PRIORITY.map((k) => ({ value: k, label: PRIORITY[k].label }))} /></Field>
-          <Field label="تاريخ الاستحقاق" required><input type="date" value={values.due_date} onChange={set('due_date')} required /></Field>
-          <Field label="الوقت"><input type="time" value={values.due_time} onChange={set('due_time')} /></Field>
-          <Field label="مسندة إلى"><MemberPicker value={values.assigned_to} onChange={set('assigned_to')} /></Field>
-          <Field label="التذكير قبل (أيام)"><input type="number" min={0} max={60} value={values.reminder_days} onChange={set('reminder_days')} /></Field>
+          <Field label="تاريخ الموعد" required><input type="date" value={values.due_date} onChange={set('due_date')} required /></Field>
+          <Field label="وقت الموعد"><input type="time" value={dueTime} onChange={set('due_time')} /></Field>
+          <Field label="مسندة إلى" full={!task}><MemberPicker value={values.assigned_to} onChange={set('assigned_to')} /></Field>
           {task && <Field label="الحالة"><Select value={values.status} onChange={set('status')} options={opts(TASK_STATUS)} /></Field>}
+
+          <div className="full remind-box">
+            <div className="remind-head"><BellRing size={17} /> <b>التذكير</b></div>
+            <div className="form-grid">
+              <Field label="متى أُذكَّر؟">
+                <Select value={mode} onChange={(v) => { setMode(v); if (v === 'custom' && !custom) setCustom(isoToBaghdad(remindAt || baghdadToIso(`${values.due_date}T08:00`))); }}
+                  options={REMIND_OPTIONS.map((o) => ({ value: o.value, label: o.label + (o.needsTime && !dueTime ? ' (9:00 ص)' : '') }))} />
+              </Field>
+              {mode === 'custom' && (
+                <Field label="تاريخ ووقت التذكير" required>
+                  <input type="datetime-local" value={custom} onChange={(e) => setCustom(e.target.value)} required />
+                </Field>
+              )}
+            </div>
+            {remindAt ? (
+              <div className={`remind-preview ${past ? 'past' : ''}`}>
+                {past ? 'هذا الوقت مضى — ' : 'سيصلك إشعار '}<b>{reminderText(remindAt)}</b>
+                {chosen?.needsTime && !dueTime && <span className="muted"> (لم تحدد وقت الموعد، فاعتُبر 9:00 ص)</span>}
+              </div>
+            ) : <div className="remind-preview muted">لن يُرسل تذكير لهذه المهمة (ستظهر في التنبيه اليومي إذا تأخرت).</div>}
+          </div>
+
           <Field label="التفاصيل" full><textarea value={values.description} onChange={set('description')} rows={3} /></Field>
         </div>
       </FormShell>

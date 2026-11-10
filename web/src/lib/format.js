@@ -16,8 +16,8 @@ export function today() {
 }
 
 export function addDays(iso, days) {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + days);
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
 
@@ -152,4 +152,23 @@ export function exportCsv(filename, columns, rows) {
   a.download = filename;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- أوقات التذكير بتوقيت بغداد (UTC+3 طوال السنة) ---------- */
+/** من قيمة datetime-local (بتوقيت بغداد) إلى ISO */
+export function baghdadToIso(local) {
+  if (!local) return null;
+  return new Date(`${local.length === 16 ? local + ':00' : local}+03:00`).toISOString();
+}
+/** من ISO إلى قيمة datetime-local بتوقيت بغداد */
+export function isoToBaghdad(iso) {
+  if (!iso) return '';
+  const d = new Date(new Date(iso).getTime() + 3 * 3600 * 1000);
+  return d.toISOString().slice(0, 16);
+}
+/** نص مقروء لوقت التذكير */
+export function reminderText(iso) {
+  if (!iso) return '';
+  const local = isoToBaghdad(iso);
+  return `${date(local.slice(0, 10), { withDay: true })} — ${time(local.slice(11, 16))}`;
 }

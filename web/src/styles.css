@@ -431,3 +431,12 @@ a.list-item:hover { background: var(--surface-2); }
 .push-card .grow { flex: 1; min-width: 200px; }
 .push-steps { margin: 6px 0; padding-inline-start: 18px; line-height: 1.9; }
 .push-steps svg { vertical-align: -2px; }
+
+/* ---------- التذكير في نموذج المهمة ---------- */
+.remind-box { border: 1px solid #ecdcb5; background: var(--accent-soft); border-radius: 12px; padding: 12px 14px; }
+.remind-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: var(--accent); }
+.remind-head b { color: var(--text); }
+.remind-preview { margin-top: 10px; font-size: 13.5px; }
+.remind-preview.past { color: var(--danger); }
+.task-remind { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--accent); }
+.task-remind.sent { color: var(--text-3); }

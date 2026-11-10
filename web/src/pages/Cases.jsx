@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Briefcase, Plus, Search, Pencil, Trash2, Gavel, ListChecks, Wallet, FolderOpen, History, Printer, CheckCircle2,
-  Download, Receipt, CalendarPlus, Scale, User,
+  Download, Receipt, CalendarPlus, Scale, User, BellRing,
 } from 'lucide-react';
 import { supabase, must } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
-import { money, date, time, today, exportCsv, timeAgo, relativeDay } from '../lib/format';
+import { money, date, time, today, exportCsv, timeAgo, relativeDay, reminderText } from '../lib/format';
 import {
   CASE_STATUS, CASE_TYPES, COURT_LEVELS, CLIENT_CAPACITY, PRIORITY, FEE_TYPES, HEARING_STATUS, TASK_STATUS, TASK_TYPES,
   PAYMENT_METHODS, EXPENSE_CATEGORIES, label, opts,
@@ -363,6 +363,11 @@ export function TaskTable({ tasks, onEdit, onChange, hideCase }) {
                 <td className="small">
                   <div style={late ? { color: 'var(--danger)', fontWeight: 600 } : undefined}>{date(k.due_date)}{k.due_time && ` ${time(k.due_time)}`}</div>
                   {!done && <div className="t-sub">{late ? `متأخرة ${relativeDay(k.due_date).replace('قبل ', '')}` : relativeDay(k.due_date)}</div>}
+                  {!done && k.remind_at && (
+                    <div className={`task-remind ${k.reminded_at ? 'sent' : ''}`} title={k.reminded_at ? 'أُرسل التذكير' : 'موعد التذكير'}>
+                      <BellRing size={12} />{k.reminded_at ? 'ذُكّرت ' : ''}{reminderText(k.remind_at)}
+                    </div>
+                  )}
                 </td>
                 <td className="hide-sm"><StatusBadge map={PRIORITY} value={k.priority} /></td>
                 <td className="hide-sm small">{k.assigned_name || '—'}</td>
