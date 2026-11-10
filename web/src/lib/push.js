@@ -9,7 +9,9 @@ export const pushSupported = () => 'serviceWorker' in navigator && 'PushManager'
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch((e) => console.warn('SW', e));
+    navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
+      .then((reg) => reg.update())
+      .catch((e) => console.warn('SW', e));
   });
 }
 

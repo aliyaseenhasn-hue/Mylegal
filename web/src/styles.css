@@ -502,6 +502,12 @@ button, a, select, input, label { -webkit-tap-highlight-color: transparent; touc
   .table td[style*="min-width"] { min-width: 0 !important; flex: 1 1 100%; }
   .table tfoot tr { justify-content: space-between; background: var(--surface-2); border-top: 1px solid var(--border); }
   .table tfoot td { background: transparent; }
+  .table tr.lawyer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .table tr.lawyer-row td:first-child { grid-column: 1 / -1; }
+  .table tr.lawyer-row td[data-label] { display: flex; justify-content: space-between; align-items: center; gap: 6px; background: var(--surface-2); border-radius: 8px; padding: 6px 10px; font-size: 13.5px; }
+  .table tr.lawyer-row td[data-label="نسبة الكسب"] { flex-wrap: wrap; }
+  .table tr.lawyer-row td[data-label="نسبة الكسب"] .progress { flex-basis: 100%; }
+  .table tr.lawyer-row td[data-label="التحصيل"] { grid-column: 1 / -1; }
   .table td[data-label]::before { content: attr(data-label) " "; color: var(--text-3); font-size: 11.5px; font-weight: 400; margin-inline-end: 4px; }
 
   /* بطاقات الإحصاء في صف واحد تبقى أفقية ومضغوطة */

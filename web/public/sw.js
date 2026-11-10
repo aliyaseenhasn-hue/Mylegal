@@ -2,6 +2,14 @@
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
+// فتح التطبيق يجلب دائماً أحدث نسخة من الصفحة (يتجاوز ذاكرة التخزين المؤقت)
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.mode === 'navigate' && req.method === 'GET') {
+    event.respondWith(fetch(req.url, { cache: 'no-store', credentials: 'same-origin' }).catch(() => fetch(req)));
+  }
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { title: 'ميزان', body: event.data && event.data.text() }; }

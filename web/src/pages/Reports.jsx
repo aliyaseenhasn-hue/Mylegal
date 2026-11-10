@@ -103,18 +103,20 @@ export default function ReportsPage() {
               if (!d.length) return <Empty title="لا يوجد محامون في المكتب" />;
               return (
                 <div className="table-wrap"><table className="table">
-                  <thead><tr><th>المحامي</th><th>القضايا</th><th>النشطة</th><th>كسب / خسارة</th><th>نسبة الكسب</th><th className="hide-sm">جلسات منعقدة</th><th className="hide-sm">مهام منجزة / متأخرة</th><th>التحصيل</th></tr></thead>
+                  <thead><tr><th>المحامي</th><th>القضايا</th><th>النشطة</th><th>كسب / خسارة</th><th>نسبة الكسب</th><th>جلسات منعقدة</th><th>مهام منجزة / متأخرة</th><th>التحصيل</th></tr></thead>
                   <tbody>{d.map((r) => {
                     const decided = Number(r.cases_won) + Number(r.cases_lost);
                     const rate = decided ? Math.round((r.cases_won / decided) * 100) : null;
                     return (
-                      <tr key={r.user_id}>
+                      <tr key={r.user_id} className="lawyer-row">
                         <td><div className="t-main">{r.full_name}</div><div className="t-sub">{ROLES[r.role]}</div></td>
-                        <td data-label="القضايا">{r.cases_total}</td><td data-label="النشطة">{r.cases_active}</td><td data-label="كسب/خسارة">{r.cases_won} / {r.cases_lost}</td>
+                        <td data-label="القضايا">{r.cases_total}</td>
+                        <td data-label="النشطة">{r.cases_active}</td>
+                        <td data-label="كسب / خسارة">{r.cases_won} / {r.cases_lost}</td>
                         <td data-label="نسبة الكسب">{rate === null ? '—' : <><b>{rate}%</b><Progress value={rate} green /></>}</td>
-                        <td className="hide-sm">{r.hearings_done}</td>
-                        <td className="hide-sm">{r.tasks_done} / <span style={{ color: r.tasks_overdue ? 'var(--danger)' : undefined }}>{r.tasks_overdue}</span></td>
-                        <td data-label="التحصيل" className="small">{money(r.collected_iqd)}{Number(r.collected_usd) > 0 && <div>{money(r.collected_usd, 'USD')}</div>}</td>
+                        <td data-label="جلسات منعقدة">{r.hearings_done}</td>
+                        <td data-label="مهام منجزة / متأخرة">{r.tasks_done} / <span style={{ color: r.tasks_overdue ? 'var(--danger)' : undefined }}>{r.tasks_overdue}</span></td>
+                        <td data-label="التحصيل">{money(r.collected_iqd)}{Number(r.collected_usd) > 0 && <> + {money(r.collected_usd, 'USD')}</>}</td>
                       </tr>
                     );
                   })}</tbody>
