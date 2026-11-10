@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "ميزان — إدارة مكتب المحاماة",
+  "short_name": "ميزان",
+  "description": "إدارة الموكلين والقضايا والجلسات والمالية لمكاتب المحاماة",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#ffffff",
+  "theme_color": "#0f2240",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
