@@ -63,6 +63,7 @@ export function AuthProvider({ children }) {
     activeMembers: members.filter((m) => m.active),
     lawyers: members.filter((m) => m.active && ['owner', 'admin', 'lawyer'].includes(m.role)),
     can,
+    isPlatformAdmin: !!ctx?.is_platform_admin,
     loading: session === undefined || (session && loadingCtx && !ctx),
     reload: loadContext,
     signOut: () => supabase.auth.signOut(),

@@ -18,6 +18,7 @@ export function must({ data, error, count }) {
 export function translateError(error) {
   const msg = error?.message || String(error);
   const map = [
+    [/banned/i, 'هذا الحساب موقوف. تواصل مع مدير المكتب'],
     [/Invalid login credentials/i, 'البريد الإلكتروني أو كلمة المرور غير صحيحة'],
     [/row-level security|permission denied|not allowed/i, 'ليست لديك صلاحية لتنفيذ هذا الإجراء'],
     [/violates foreign key constraint.*(cases_client_id|payments_case_id|expenses_case_id)/i, 'لا يمكن الحذف لوجود سجلات مرتبطة (قضايا أو دفعات). أرشِف السجل بدلاً من حذفه'],

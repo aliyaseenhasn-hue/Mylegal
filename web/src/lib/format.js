@@ -42,7 +42,7 @@ export function shortDate(iso) {
 export function dateTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
-  const t = d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Baghdad' });
+  const t = d.toLocaleTimeString('ar-IQ-u-nu-latn', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Baghdad' });
   return `${date(iso)} — ${t}`;
 }
 

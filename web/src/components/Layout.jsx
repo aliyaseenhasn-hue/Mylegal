@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, CalendarDays, ListChecks, Wallet, FileSignature, BarChart3,
-  Bell, Settings, LogOut, Search, Menu, Moon, Sun, Scale, History, FolderOpen,
+  Bell, Settings, LogOut, Search, Menu, Moon, Sun, Scale, History, FolderOpen, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -83,7 +83,7 @@ function GlobalSearch() {
 }
 
 export default function Layout() {
-  const { member, office, can, signOut, user } = useAuth();
+  const { member, office, can, signOut, user, isPlatformAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [isDark, toggleTheme] = useTheme();
@@ -122,6 +122,7 @@ export default function Layout() {
     { to: '/notifications', icon: Bell, label: 'التنبيهات', count: unread },
     ...(can('viewActivity') ? [{ to: '/activity', icon: History, label: 'سجل النشاط' }] : []),
     { to: '/settings', icon: Settings, label: 'الإعدادات' },
+    ...(isPlatformAdmin ? [{ section: 'المنصة' }, { to: '/platform', icon: ShieldCheck, label: 'المشرف العام' }] : []),
   ];
 
   return (

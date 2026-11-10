@@ -83,7 +83,12 @@ function MemberModal({ member, onClose, onSaved }) {
     <Modal title={member ? `تعديل: ${member.full_name}` : 'إضافة عضو للفريق'} onClose={onClose}>
       <FormShell onCancel={onClose} submitText={member ? 'حفظ' : 'إنشاء الحساب'} onSubmit={async () => {
         if (member) {
-          await callFunction('manage-member', { action: 'update', user_id: member.user_id, role: values.role, full_name: values.full_name, phone: values.phone, title: values.title });
+          if (member.role !== 'owner') {
+            await callFunction('manage-member', { action: 'update', user_id: member.user_id, role: values.role, full_name: values.full_name, phone: values.phone, title: values.title });
+          }
+          if (values.email.trim().toLowerCase() !== (member.email || '').toLowerCase()) {
+            await callFunction('manage-member', { action: 'update_email', user_id: member.user_id, email: values.email });
+          }
           toast('تم تحديث بيانات العضو');
         } else {
           if (values.password.length < 8) throw new Error('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
@@ -99,7 +104,7 @@ function MemberModal({ member, onClose, onSaved }) {
               <Select value={values.role} onChange={set('role')} options={['admin', 'lawyer', 'accountant', 'secretary'].map((r) => ({ value: r, label: ROLES[r] }))} />
             )}
           </Field>
-          {!member && <Field label="البريد الإلكتروني (لتسجيل الدخول)" required><input type="email" value={values.email} onChange={set('email')} required dir="ltr" /></Field>}
+          <Field label="البريد الإلكتروني (لتسجيل الدخول)" required hint={member ? 'عند تغييره يسجّل العضو دخوله بالبريد الجديد' : undefined}><input type="email" value={values.email} onChange={set('email')} required dir="ltr" /></Field>
           {!member && <Field label="كلمة مرور مؤقتة" required hint="8 أحرف على الأقل، يمكن للعضو تغييرها لاحقاً"><input value={values.password} onChange={set('password')} required dir="ltr" minLength={8} /></Field>}
           <Field label="الهاتف"><input value={values.phone} onChange={set('phone')} dir="ltr" /></Field>
           <Field label="المسمى الوظيفي"><input value={values.title} onChange={set('title')} placeholder="مثال: محامٍ متدرب" /></Field>
@@ -181,6 +186,7 @@ function AccountTab() {
   const toast = useToast();
   const { values, set } = useForm({ full_name: member.full_name || '', phone: member.phone || '', title: member.title || '' });
   const [pw, setPw] = useState({ a: '', b: '' });
+  const [em, setEm] = useState({ email: '', password: '' });
   return (
     <div className="card-body">
       <div className="grid cols-2">
@@ -210,6 +216,18 @@ function AccountTab() {
             <div className="stack" style={{ gap: 12 }}>
               <Field label="كلمة المرور الجديدة"><input type="password" value={pw.a} onChange={(e) => setPw({ ...pw, a: e.target.value })} dir="ltr" autoComplete="new-password" /></Field>
               <Field label="تأكيد كلمة المرور"><input type="password" value={pw.b} onChange={(e) => setPw({ ...pw, b: e.target.value })} dir="ltr" autoComplete="new-password" /></Field>
+            </div>
+          </FormShell>
+          <h4 style={{ margin: '28px 0 12px' }}>تغيير البريد الإلكتروني</h4>
+          <FormShell submitText="تغيير البريد" onSubmit={async () => {
+            await callFunction('account', { action: 'change_email', new_email: em.email, password: em.password });
+            setEm({ email: '', password: '' });
+            await supabase.auth.refreshSession();
+            toast('تم تغيير البريد. استخدم البريد الجديد عند تسجيل الدخول'); reload();
+          }}>
+            <div className="stack" style={{ gap: 12 }}>
+              <Field label="البريد الجديد" required><input type="email" value={em.email} onChange={(e) => setEm({ ...em, email: e.target.value })} dir="ltr" required /></Field>
+              <Field label="كلمة المرور الحالية (للتأكيد)" required><input type="password" value={em.password} onChange={(e) => setEm({ ...em, password: e.target.value })} dir="ltr" required autoComplete="current-password" /></Field>
             </div>
           </FormShell>
         </div>

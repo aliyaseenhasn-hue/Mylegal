@@ -14,9 +14,10 @@ import { DocumentsPage } from './pages/Documents';
 import ReportsPage from './pages/Reports';
 import SettingsPage from './pages/Settings';
 import { NotificationsPage, ActivityPage, NotFound } from './pages/Misc';
+import PlatformPage from './pages/Platform';
 
 function Gate() {
-  const { session, member, loading, signOut, can } = useAuth();
+  const { session, member, loading, signOut, can, isPlatformAdmin } = useAuth();
   if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><Loader label="جارٍ التحميل…" /></div>;
   if (!session) return <Login />;
   if (!member) return <NoOffice onSignOut={signOut} />;
@@ -38,6 +39,7 @@ function Gate() {
         {can('viewActivity') && <Route path="activity" element={<ActivityPage />} />}
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        {isPlatformAdmin && <Route path="platform" element={<PlatformPage />} />}
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

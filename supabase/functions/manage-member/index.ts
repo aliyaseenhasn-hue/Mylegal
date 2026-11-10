@@ -85,6 +85,15 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  if (action === "update_email") {
+    const email = String(body.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "البريد الإلكتروني غير صالح" }, 400);
+    const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+    if (error) return json({ error: /already|registered|exists/i.test(error.message) ? "هذا البريد مستخدم في حساب آخر" : "تعذر تغيير البريد" }, 400);
+    await admin.from("office_members").update({ email }).eq("user_id", userId);
+    return json({ ok: true });
+  }
+
   if (action === "reset_password") {
     const password = String(body.password || "");
     if (password.length < 8) return json({ error: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" }, 400);
