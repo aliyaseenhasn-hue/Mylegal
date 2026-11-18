@@ -562,3 +562,7 @@ button, a, select, input, label { -webkit-tap-highlight-color: transparent; touc
   .btn:not(.btn-icon) { padding: 0 12px; }
   .brand-sub { max-width: 140px; }
 }
+
+.push-help { margin-top: 8px; }
+.push-help summary { cursor: pointer; color: var(--info); font-size: 13px; }
+.push-help[open] summary { margin-bottom: 4px; }
