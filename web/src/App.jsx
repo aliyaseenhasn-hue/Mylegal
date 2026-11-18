@@ -15,6 +15,7 @@ import ReportsPage from './pages/Reports';
 import SettingsPage from './pages/Settings';
 import { NotificationsPage, ActivityPage, NotFound } from './pages/Misc';
 import PlatformPage from './pages/Platform';
+import RequestsPage from './pages/Requests';
 
 function Gate() {
   const { session, member, loading, signOut, can, isPlatformAdmin } = useAuth();
@@ -37,6 +38,7 @@ function Gate() {
         {can('viewFinance') && <Route path="receipt/:id" element={<ReceiptPage />} />}
         {can('viewReports') && <Route path="reports" element={<ReportsPage />} />}
         {can('viewActivity') && <Route path="activity" element={<ActivityPage />} />}
+        <Route path="requests" element={<RequestsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         {isPlatformAdmin && <Route path="platform" element={<PlatformPage />} />}

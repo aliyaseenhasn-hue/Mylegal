@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Briefcase, CalendarDays, ListChecks, Wallet, FileSignature, BarChart3,
-  Bell, Settings, LogOut, Search, Menu, Moon, Sun, Scale, History, FolderOpen, ShieldCheck,
+  Bell, Settings, LogOut, Search, Menu, Moon, Sun, Scale, History, FolderOpen, ShieldCheck, Inbox,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -86,6 +86,7 @@ export default function Layout() {
   const { member, office, can, signOut, user, isPlatformAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [newRequests, setNewRequests] = useState(0);
   const [isDark, toggleTheme] = useTheme();
   const loc = useLocation();
 
@@ -96,6 +97,8 @@ export default function Layout() {
     const load = async () => {
       const { count } = await supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('is_read', false);
       if (alive) setUnread(count || 0);
+      const { count: reqCount } = await supabase.from('consultation_requests').select('id', { count: 'exact', head: true }).eq('status', 'جديد');
+      if (alive) setNewRequests(reqCount || 0);
     };
     supabase.rpc('refresh_my_notifications').then(load, load);
     const t = setInterval(load, 60000);
@@ -112,6 +115,7 @@ export default function Layout() {
     { to: '/calendar', icon: CalendarDays, label: 'الجلسات والتقويم' },
     { to: '/tasks', icon: ListChecks, label: 'المهام والمواعيد' },
     { section: 'العمل القانوني' },
+    { to: '/requests', icon: Inbox, label: 'طلبات الاستشارة', count: newRequests },
     { to: '/clients', icon: Users, label: 'الموكلون' },
     { to: '/cases', icon: Briefcase, label: 'القضايا' },
     { to: '/poa', icon: FileSignature, label: 'الوكالات' },

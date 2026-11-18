@@ -45,10 +45,10 @@ function MemberPicker({ value, onChange, lawyersOnly, placeholder = '— غير 
 }
 
 /* ---------- الموكل ---------- */
-export function ClientForm({ client, onClose, onSaved }) {
+export function ClientForm({ client, initial, onClose, onSaved }) {
   const toast = useToast();
   const { values, set } = useForm({
-    kind: 'individual', ...pick(client, ['name', 'national_id', 'phone', 'phone2', 'email', 'address', 'occupation', 'referred_by', 'notes']),
+    kind: 'individual', ...pick(client || initial, ['name', 'national_id', 'phone', 'phone2', 'email', 'address', 'occupation', 'referred_by', 'notes']),
     ...(client?.kind ? { kind: client.kind } : {}),
   });
   return (
